@@ -1,0 +1,14 @@
+# How long is the returned token valid
+expiration_seconds: 900
+
+roleMapping:
+    developer:
+        # To get token as a member of this role,
+        arn: arn:aws:iam::123456789012:role/kubernetes_user
+        # in this cluster,
+        region: eu-central-1
+        cluster_name: some-eks-cluster
+        # one must be a member of this organization's team:
+        github:
+            organization: TwistoPayments
+            team: kubernetes
