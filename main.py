@@ -14,6 +14,12 @@ import yaml
 
 SETTINGS_FILE = os.environ.get('SETTINGS_FILE', 'settings_example.yaml')
 print('Using settings', SETTINGS_FILE)
+"""
+Use prefix for obfuscation. This should limit random attempts to break into
+a publicly accessible service.
+"""
+URL_PREFIX = os.environ.get('URL_PREFIX', '/')
+print('Using URL prefix', URL_PREFIX)
 
 
 DEFAULT_EXPIRATION_SECONDS = 3600
@@ -27,11 +33,16 @@ EXPIRATION_BUFFER_SECONDS = 30
 with open(SETTINGS_FILE) as f:
     config = yaml.safe_load(f)
 
+print('Known roles:')
+for role in config['roleMapping'].keys():
+    print('-', role)
+print('##########################')
+
 app = Flask(__name__)
 sts = boto3.client('sts')
 
 
-@app.route('/')
+@app.route(f'{URL_PREFIX}')
 def index():
     return dedent('''
         You are not expected to use this service manually.
@@ -42,7 +53,7 @@ def index():
     ''')
 
 
-@app.route('/token', methods=['GET'])
+@app.route(f'{URL_PREFIX}/token', methods=['GET'])
 def exchange_token():
     role = request.args.get('role')
     role_mapping = config['roleMapping'].get(role)
@@ -81,10 +92,11 @@ def exchange_token():
 
     user = gh_user.json()['login']
     session_name = user + '@users.noreply.github.com'
+    expiration_time = config.get('expiration_seconds', DEFAULT_EXPIRATION_SECONDS)
     creds_resp = sts.assume_role(
         RoleArn=role_mapping['arn'],
         RoleSessionName=session_name,
-        DurationSeconds=config.get('expiration_seconds', DEFAULT_EXPIRATION_SECONDS) + EXPIRATION_BUFFER_SECONDS,
+        DurationSeconds=expiration_time + EXPIRATION_BUFFER_SECONDS,
     )
 
     app.logger.info(
@@ -107,7 +119,8 @@ def exchange_token():
         "apiVersion": "client.authentication.k8s.io/v1alpha1",
         "spec": {},
         "status": {
-            "expirationTimestamp": "2020-06-16T10:35:52Z",
+            "expirationTimestamp": (datetime.datetime.utcnow()
+                + datetime.timedelta(seconds=expiration_time)).strftime('%Y-%m-%dT%H:%M:%SZ'),
             "token": token,
         }
     }
