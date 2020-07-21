@@ -1,12 +1,10 @@
 import base64
 import datetime
-import logging.config
 import os
 import re
 from textwrap import dedent
 
 import boto3
-from botocore.signers import RequestSigner
 import requests
 from flask import Flask, make_response, request
 import yaml
@@ -75,7 +73,7 @@ def exchange_token():
     if gh_teams.status_code == 401:
         resp = make_response(gh_teams.text)
         resp.headers['Content-Type'] = gh_teams.headers['Content-Type']
-        return resp
+        return resp, 401
 
     if gh_teams.status_code != 200:
         return 'Error communicating with Github', 503
