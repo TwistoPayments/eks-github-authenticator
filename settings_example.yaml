@@ -1,10 +1,3 @@
-# How long is the returned token valid
-# Minimum: 900 seconds
-# Maximum: 3600 - EXPIRATION_BUFFER_SECONDS = 3570
-# The maximum expiration is limited by AWS - when a role assumes another role, AWS won't issue a token with expiration
-# longer than one hour.
-expiration_seconds: 900
-
 roleMapping:
     developer:
         # To get token as a member of this role,
