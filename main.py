@@ -20,7 +20,7 @@ URL_PREFIX = os.environ.get('URL_PREFIX', '/')
 print('Using URL prefix', URL_PREFIX)
 
 
-DEFAULT_EXPIRATION_SECONDS = 3600
+DEFAULT_EXPIRATION_SECONDS = 900
 
 """
 The Kubernetes token expiration should be shorter than the temporary STS
@@ -90,7 +90,7 @@ def exchange_token():
 
     user = gh_user.json()['login']
     session_name = user + '@users.noreply.github.com'
-    expiration_time = config.get('expiration_seconds', DEFAULT_EXPIRATION_SECONDS)
+    expiration_time = DEFAULT_EXPIRATION_SECONDS
     creds_resp = sts.assume_role(
         RoleArn=role_mapping['arn'],
         RoleSessionName=session_name,
@@ -110,21 +110,22 @@ def exchange_token():
         },
     )
 
-    token = make_eks_token(role_mapping['region'], role_mapping['cluster_name'], creds_resp['Credentials'])
+    token = make_eks_token(expiration_time, role_mapping['region'], role_mapping['cluster_name'], creds_resp['Credentials'])
 
     return {
         "kind": "ExecCredential",
         "apiVersion": "client.authentication.k8s.io/v1alpha1",
         "spec": {},
         "status": {
-            "expirationTimestamp": (datetime.datetime.utcnow()
-                + datetime.timedelta(seconds=expiration_time)).strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "expirationTimestamp": (
+                creds_resp['Credentials']['Expiration'] - datetime.timedelta(seconds=EXPIRATION_BUFFER_SECONDS)
+            ).strftime('%Y-%m-%dT%H:%M:%SZ'),
             "token": token,
         }
     }
 
 
-def make_eks_token(region, cluster_name, creds):
+def make_eks_token(expiration_sec, region, cluster_name, creds):
     temporary_client = boto3.client(
         'sts',
         region_name=region,
@@ -149,7 +150,7 @@ def make_eks_token(region, cluster_name, creds):
         params,
         region_name=region,
         expires_in=0,
-        operation_name=''
+        operation_name='',
     )
     base64_url = base64.urlsafe_b64encode(signed_url.encode('utf-8')).decode('utf-8')
 
