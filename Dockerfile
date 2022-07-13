@@ -5,7 +5,7 @@ RUN pip3 install pipenv
 COPY Pipfile Pipfile.lock /app/
 
 WORKDIR /app
-ENV PIPENV_VENV_IN_PROJECT=enabled
+ENV PIPENV_VENV_IN_PROJECT=1
 RUN pipenv install
 
 #####################################
