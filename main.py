@@ -31,8 +31,9 @@ app.logger.info(f'Using URL prefix: {URL_PREFIX}')
 """
 The Kubernetes token expiration should be shorter than the temporary STS
 credentials to avoid unexpected rejections.
+Role chaining limits your AWS CLI or AWS API role session to a maximum of one hour!!!
 """
-DEFAULT_EXPIRATION_SECONDS = 7200
+DEFAULT_EXPIRATION_SECONDS = 3500
 
 EXPIRATION_BUFFER_SECONDS = 30
 
