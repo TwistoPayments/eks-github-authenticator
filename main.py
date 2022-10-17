@@ -165,7 +165,7 @@ def make_eks_token(expiration_sec, region, cluster_name, creds):
     signed_url = signer.generate_presigned_url(
         params,
         region_name=region,
-        expires_in=0,
+        expires_in=expiration_sec,
         operation_name='',
     )
     base64_url = base64.urlsafe_b64encode(signed_url.encode('utf-8')).decode('utf-8')
