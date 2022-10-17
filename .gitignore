@@ -1,1 +1,6 @@
 /settings_dev.yaml
+.idea/
+*.pyc
+/*.egg-info/
+.venv/
+.tool-versions

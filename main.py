@@ -8,36 +8,42 @@ import boto3
 import requests
 from flask import Flask, make_response, request
 import yaml
+import logging
 
+
+app = Flask(__name__)
+sts = boto3.client('sts')
+
+gunicorn_logger = logging.getLogger('gunicorn.error')
+app.logger.handlers = gunicorn_logger.handlers
+app.logger.setLevel(gunicorn_logger.level)
 
 SETTINGS_FILE = os.environ.get('SETTINGS_FILE', 'settings_example.yaml')
-print('Using settings', SETTINGS_FILE)
+app.logger.info(f'Using settings: {SETTINGS_FILE}')
+
 """
 Use prefix for obfuscation. This should limit random attempts to break into
 a publicly accessible service.
 """
 URL_PREFIX = os.environ.get('URL_PREFIX', '/')
-print('Using URL prefix', URL_PREFIX)
-
-
-DEFAULT_EXPIRATION_SECONDS = 900
+app.logger.info(f'Using URL prefix: {URL_PREFIX}')
 
 """
 The Kubernetes token expiration should be shorter than the temporary STS
 credentials to avoid unexpected rejections.
 """
+DEFAULT_EXPIRATION_SECONDS = 7200
+
 EXPIRATION_BUFFER_SECONDS = 30
 
 with open(SETTINGS_FILE) as f:
     config = yaml.safe_load(f)
 
-print('Known roles:')
-for role in config['roleMapping'].keys():
-    print('-', role)
-print('##########################')
 
-app = Flask(__name__)
-sts = boto3.client('sts')
+app.logger.info('Known roles:')
+for role in config['roleMapping'].keys():
+    app.logger.info(f'- {role}')
+app.logger.info('##########################')
 
 
 @app.route(f'{URL_PREFIX}')
@@ -56,10 +62,12 @@ def exchange_token():
     role = request.args.get('role')
     role_mapping = config['roleMapping'].get(role)
     if not role_mapping:
+        app.logger.error({'message': 'Unknown role', 'role': role_mapping})
         return 'Unknown role.', 400
 
     auth = request.headers.get('Authorization')
     if not auth:
+        app.logger.error({'message': 'Missing authorization header'})
         return dedent('''
             Not authorized, supply your Github authentication.
 
@@ -73,22 +81,29 @@ def exchange_token():
     if gh_teams.status_code == 401:
         resp = make_response(gh_teams.text)
         resp.headers['Content-Type'] = gh_teams.headers['Content-Type']
+        app.logger.error(gh_teams.text)
         return resp, 401
 
-    if gh_teams.status_code != 200:
+    gh_user = requests.get('https://api.github.com/user', headers={'Authorization': auth})
+
+    if (gh_teams.status_code or gh_user.status_code) != 200:
+        app.logger.error({'message': 'Error communicating with Github'})
         return 'Error communicating with Github', 503
 
+    user = gh_user.json()['login']
     found_teams = [(team['organization']['login'], team['name']) for team in gh_teams.json()]
     authorized = (role_mapping['github']['organization'], role_mapping['github']['team']) in found_teams
 
     if not authorized:
+        app.logger.error(
+            {
+                'user': user,
+                'org': role_mapping['github']['organization'],
+                'message': 'Unauthorized for this role'
+             }
+        )
         return 'Unauthorized for this role', 403
 
-    gh_user = requests.get('https://api.github.com/user', headers={'Authorization': auth})
-    if gh_user.status_code != 200:  # If the first request succeeded, we assume the others should be authorized as well
-        return 'Error communicating with Github', 503
-
-    user = gh_user.json()['login']
     session_name = user + '@users.noreply.github.com'
     expiration_time = DEFAULT_EXPIRATION_SECONDS
     creds_resp = sts.assume_role(
@@ -97,10 +112,10 @@ def exchange_token():
         DurationSeconds=expiration_time + EXPIRATION_BUFFER_SECONDS,
     )
 
+    # Authenticated Github user %(user)s because he belongs
+    # to %(org)s/%(team)s and gave him temporary key %(key)s
+    # for role %(role)s
     app.logger.info(
-        'Authenticated Github user %(user)s because he belongs '
-        'to %(org)s/%(team)s and gave him temporary key %(key)s '
-        'for role %(role)s',
         {
             'user': user,
             'org': role_mapping['github']['organization'],
