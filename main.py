@@ -62,12 +62,12 @@ def exchange_token():
     role = request.args.get('role')
     role_mapping = config['roleMapping'].get(role)
     if not role_mapping:
-        app.logger.debug({'message': 'Unknown role', 'role': role_mapping})
+        app.logger.error({'message': 'Unknown role', 'role': role_mapping})
         return 'Unknown role.', 400
 
     auth = request.headers.get('Authorization')
     if not auth:
-        app.logger.debug({'message': 'Missing authorization header'})
+        app.logger.error({'message': 'Missing authorization header'})
         return dedent('''
             Not authorized, supply your Github authentication.
 
@@ -81,13 +81,13 @@ def exchange_token():
     if gh_teams.status_code == 401:
         resp = make_response(gh_teams.text)
         resp.headers['Content-Type'] = gh_teams.headers['Content-Type']
-        app.logger.warning(gh_teams.text)
+        app.logger.error(gh_teams.text)
         return resp, 401
 
     gh_user = requests.get('https://api.github.com/user', headers={'Authorization': auth})
 
     if (gh_teams.status_code or gh_user.status_code) != 200:
-        app.logger.warning({'message': 'Error communicating with Github'})
+        app.logger.error({'message': 'Error communicating with Github'})
         return 'Error communicating with Github', 503
 
     user = gh_user.json()['login']
@@ -95,7 +95,7 @@ def exchange_token():
     authorized = (role_mapping['github']['organization'], role_mapping['github']['team']) in found_teams
 
     if not authorized:
-        app.logger.warning(
+        app.logger.error(
             {
                 'user': user,
                 'org': role_mapping['github']['organization'],
