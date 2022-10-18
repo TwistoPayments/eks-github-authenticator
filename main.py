@@ -33,7 +33,7 @@ The Kubernetes token expiration should be shorter than the temporary STS
 credentials to avoid unexpected rejections.
 Role chaining limits your AWS CLI or AWS API role session to a maximum of one hour!!!
 """
-DEFAULT_EXPIRATION_SECONDS = 3500
+DEFAULT_EXPIRATION_SECONDS = 900
 
 EXPIRATION_BUFFER_SECONDS = 30
 
