@@ -8,4 +8,4 @@ roleMapping:
         # one must be a member of this organization's team:
         github:
             organization: TwistoPayments
-            team: kubernetes
+            team: kubernetess
