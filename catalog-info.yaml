@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: eks-github-authenticator
+  description: |
+    An application that allows access to the EKS cluster using Github credentials / tokens
+  annotations:
+    github.com/project-slug: TwistoPayments/eks-github-authenticator
+    backstage.io/techdocs-ref: dir:.
+  links:
+    - title: Latest Releases
+      url: https://github.com/TwistoPayments/eks-github-authenticator/releases
+      icon: github
+  tags:
+    - python
+    - tool
+    - kubernetes
+    - security
+spec:
+  type: library
+  owner: org-devops
+  lifecycle: production
+  system: platform

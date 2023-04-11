@@ -1,0 +1,7 @@
+site_name: 'AWS EKS GitHub Token Authenticator'
+
+nav:
+  - Home: README.md
+
+plugins:
+  - techdocs-core
