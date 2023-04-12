@@ -2,14 +2,23 @@ import base64
 import datetime
 import os
 import re
-from textwrap import dedent
-
 import boto3
 import requests
-from flask import Flask, make_response, request
+import sentry_sdk
 import yaml
 import logging
 
+from textwrap import dedent
+from sentry_sdk.integrations.flask import FlaskIntegration
+from flask import Flask, make_response, request
+
+sentry_sdk.init(
+    dsn="https://a44585e2694a4f0a83e8f1dce0f901f0@o430641.ingest.sentry.io/4505000611217408",
+    integrations=[
+        FlaskIntegration(),
+    ],
+    traces_sample_rate=1.0
+)
 
 app = Flask(__name__)
 sts = boto3.client('sts')
