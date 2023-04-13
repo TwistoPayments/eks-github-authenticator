@@ -17,7 +17,7 @@ sentry_sdk.init(
     integrations=[
         FlaskIntegration(),
     ],
-    traces_sample_rate=1.0
+    traces_sample_rate=0,
 )
 
 app = Flask(__name__)
