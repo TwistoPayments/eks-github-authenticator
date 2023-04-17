@@ -11,7 +11,7 @@ ipython = "*"
 gunicorn = "*"
 requests = "*"
 flask = "*"
-sentry-sdk = "*"
+sentry-sdk = {version = "*", extras = ["flask"]}
 pyyaml = "*"
 
 [requires]
