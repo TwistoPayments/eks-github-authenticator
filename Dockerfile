@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS builder
+FROM ubuntu:22.04 AS builder
 
 RUN apt-get update && apt install -y python3-dev python3-pip
 RUN pip3 install pipenv
@@ -9,7 +9,7 @@ ENV PIPENV_VENV_IN_PROJECT=1
 RUN pipenv install
 
 #####################################
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update \
     && apt-get -y dist-upgrade \
