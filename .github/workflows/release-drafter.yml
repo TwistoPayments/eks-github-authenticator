@@ -16,8 +16,10 @@ jobs:
   update_release_draft:
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@3f0f87098bd6b5c5b9a36d49c41d998ea58f9348 # pin@v6.0.0
+      - name: Publish release
+        uses: release-drafter/release-drafter@3f0f87098bd6b5c5b9a36d49c41d998ea58f9348 # pin@v6.0.0
         with:
-          publish: ${{ github.ref == 'refs/heads/master' }}
+          commitish: master # workaround: https://github.com/release-drafter/release-drafter/issues/1125
+          publish: github.ref == 'refs/heads/master'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
