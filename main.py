@@ -63,7 +63,7 @@ def index():
 
         Use the following command to get a kubectl token:
 
-            twisto-eks token --role developer
+            twisto-eks-token --role developer
     ''')
 
 
